@@ -60,7 +60,7 @@ function ResetPasswordForm({ token, loading }: ResetPasswordFormProps) {
         
         {!loading && (
           <div className="flex flex-col justify-center items-center">
-            <img src="/logo.webp" alt="Logo" className="w-20 h-20" />
+            <img src="/logo.png" alt="Logo" className="h-20" />
           </div>
         )}
 

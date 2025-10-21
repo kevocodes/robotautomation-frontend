@@ -17,9 +17,9 @@ function Login() {
     <main className="min-h-[100dvh] grid place-items-center">
       <Card className="w-full max-w-xl border-none shadow-none">
         <CardHeader className="text-center flex flex-col gap-3 justify-center items-center">
-          <img src="/logo.webp" alt="Logo" className="w-20 h-20" />
+          <img src="/logo.png" alt="Logo" className="h-20" />
           <div className="flex flex-col gap-2 text-balance">
-            <CardTitle>Escuela Educación Especial Ahuachapán</CardTitle>
+            <CardTitle>Robot automation UCA</CardTitle>
             <CardDescription>
               Ingresa tus credenciales para iniciar sesión
             </CardDescription>
