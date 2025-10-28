@@ -4,6 +4,7 @@ import { ResponseError } from "@/models/responseError.model";
 import {
   getResources,
   getSelectedResources,
+  reorderSelectedResources,
   selectAvailableResource,
   unselectAvailableResource,
 } from "@/services/resources.service";
@@ -48,8 +49,11 @@ function ResourcesSelection() {
     useState<boolean>(false);
   const [isMutatingSelectedResource, setIsMutatingSelectedResource] =
     useState<boolean>(false);
+  const [isSavingOrder, setIsSavingOrder] = useState<boolean>(false);
 
   const token = useAuth((state) => state.token);
+  const isProcessingSelectedResources =
+    isMutatingSelectedResource || isSavingOrder;
 
   useEffect(() => {
     const fetchResources = async () => {
@@ -230,6 +234,33 @@ function ResourcesSelection() {
     }
   };
 
+  const handleSaveResourcesOrder = async () => {
+    if (!token || selectedResources.length === 0) return;
+
+    try {
+      setIsSavingOrder(true);
+
+      const orderedIds = selectedResources.map(
+        (selectedResource) => selectedResource.id
+      );
+
+      await reorderSelectedResources(orderedIds, token);
+      toast.success("Orden de recursos actualizado correctamente");
+    } catch (error) {
+      if (error instanceof ResponseError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Ha ocurrido un error inesperado al guardar el orden");
+      }
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const overlayMessage = isSavingOrder
+    ? "Guardando orden..."
+    : "Procesando selección...";
+
   return (
     <Accordion
       type="single"
@@ -249,7 +280,7 @@ function ResourcesSelection() {
                 onSelectResource={setSelectedResourceId}
                 resources={resources}
                 groupedResources={groupedResources}
-                disabled={isMutatingSelectedResource || isLoadingResources}
+                disabled={isProcessingSelectedResources || isLoadingResources}
               />
               <Button
                 variant="default"
@@ -258,13 +289,14 @@ function ResourcesSelection() {
                 onClick={handleAddSelectedResource}
                 disabled={
                   !selectedResourceId ||
-                  isMutatingSelectedResource ||
+                  isProcessingSelectedResources ||
                   isLoadingResources
                 }
               >
-                {isMutatingSelectedResource ? (
+                {isProcessingSelectedResources ? (
                   <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Procesando...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {isSavingOrder ? "Guardando..." : "Procesando..."}
                   </span>
                 ) : isLoadingResources ? (
                   <span className="inline-flex items-center gap-2">
@@ -285,12 +317,10 @@ function ResourcesSelection() {
             )}
 
             <div className="mt-4 relative">
-              {isMutatingSelectedResource && (
+              {isProcessingSelectedResources && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/70 backdrop-blur-sm">
                   <Loader2 className="mr-2 h-5 w-5 animate-spin text-slate-500" />
-                  <span className="text-sm text-slate-600">
-                    Procesando selección...
-                  </span>
+                  <span className="text-sm text-slate-600">{overlayMessage}</span>
                 </div>
               )}
               {isLoadingSelectedResources ? (
@@ -313,7 +343,7 @@ function ResourcesSelection() {
                     <ul
                       className={cn(
                         "space-y-2",
-                        isMutatingSelectedResource && "pointer-events-none"
+                        isProcessingSelectedResources && "pointer-events-none"
                       )}
                     >
                       {selectedResources.map((selectedResource) => {
@@ -329,13 +359,35 @@ function ResourcesSelection() {
                                 : "Recurso no encontrado"
                             }
                             onRemove={handleRemoveSelectedResource}
-                            disabled={isMutatingSelectedResource}
+                            disabled={isProcessingSelectedResources}
                           />
                         );
                       })}
                     </ul>
                   </SortableContext>
                 </DndContext>
+              )}
+              {selectedResources.length > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="default"
+                    className="w-full"
+                    onClick={handleSaveResourcesOrder}
+                    disabled={
+                      selectedResources.length <= 1 || isProcessingSelectedResources
+                    }
+                  >
+                    {isSavingOrder ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Guardando orden...
+                      </span>
+                    ) : (
+                      "Guardar orden"
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
           </div>
