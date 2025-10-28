@@ -1,4 +1,5 @@
 import { Accordion, AccordionTrigger } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Resource, SelectedResource } from "@/models/resources.model";
 import { ResponseError } from "@/models/responseError.model";
 import {
@@ -15,7 +16,7 @@ import { toast } from "sonner";
 import ResourceSearchableSelector from "./components/ResourceSearchableSelector";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { GripVertical, Loader2, Trash2 } from "lucide-react";
+import { GripVertical, Loader2, PackageOpen, Trash2 } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -45,15 +46,36 @@ function ResourcesSelection() {
   const [selectedResources, setSelectedResources] = useState<
     SelectedResource[]
   >([]);
-  const [isLoadingSelectedResources, setIsLoadingSelectedResources] =
-    useState<boolean>(false);
-  const [isMutatingSelectedResource, setIsMutatingSelectedResource] =
-    useState<boolean>(false);
-  const [isSavingOrder, setIsSavingOrder] = useState<boolean>(false);
+  type SelectedResourcesStatus =
+    | "idle"
+    | "loading"
+    | "adding"
+    | "removing"
+    | "reordering";
+  const [selectedResourcesStatus, setSelectedResourcesStatus] =
+    useState<SelectedResourcesStatus>("idle");
+  const [resourceBeingRemovedId, setResourceBeingRemovedId] = useState<
+    string | null
+  >(null);
 
   const token = useAuth((state) => state.token);
-  const isProcessingSelectedResources =
-    isMutatingSelectedResource || isSavingOrder;
+  const isFetchingSelectedResources = selectedResourcesStatus === "loading";
+  const isAddingSelectedResource = selectedResourcesStatus === "adding";
+  const isRemovingSelectedResource = selectedResourcesStatus === "removing";
+  const isReorderingSelectedResources =
+    selectedResourcesStatus === "reordering";
+  const isSelectionActionInFlight =
+    isAddingSelectedResource ||
+    isRemovingSelectedResource ||
+    isReorderingSelectedResources;
+  const isSelectorDisabled =
+    isLoadingResources ||
+    isFetchingSelectedResources ||
+    isSelectionActionInFlight;
+  const isAddButtonDisabled =
+    !selectedResourceId || isSelectorDisabled;
+  const showSelectionOverlay = isReorderingSelectedResources;
+  const isListInteractionLocked = isSelectionActionInFlight;
 
   useEffect(() => {
     const fetchResources = async () => {
@@ -80,7 +102,9 @@ function ResourcesSelection() {
   useEffect(() => {
     const fetchSelectedResources = async () => {
       try {
-        setIsLoadingSelectedResources(true);
+        setSelectedResourcesStatus((prevStatus) =>
+          prevStatus === "idle" ? "loading" : prevStatus
+        );
         const response = await getSelectedResources(token!);
         setSelectedResources(response);
       } catch (error) {
@@ -92,7 +116,9 @@ function ResourcesSelection() {
           "Ha ocurrido un error inesperado al cargar los recursos seleccionados"
         );
       } finally {
-        setIsLoadingSelectedResources(false);
+        setSelectedResourcesStatus((prevStatus) =>
+          prevStatus === "loading" ? "idle" : prevStatus
+        );
       }
     };
 
@@ -171,7 +197,7 @@ function ResourcesSelection() {
     }
 
     try {
-      setIsMutatingSelectedResource(true);
+      setSelectedResourcesStatus("adding");
       const savedSelectedResource = await selectAvailableResource(
         resourceToAdd.id,
         token
@@ -202,7 +228,9 @@ function ResourcesSelection() {
         toast.error("Ha ocurrido un error inesperado al guardar el recurso");
       }
     } finally {
-      setIsMutatingSelectedResource(false);
+      setSelectedResourcesStatus((prevStatus) =>
+        prevStatus === "adding" ? "idle" : prevStatus
+      );
     }
   };
 
@@ -212,7 +240,8 @@ function ResourcesSelection() {
     if (!token) return;
 
     try {
-      setIsMutatingSelectedResource(true);
+      setSelectedResourcesStatus("removing");
+      setResourceBeingRemovedId(selectedResource.id);
       await unselectAvailableResource(selectedResource.id, token);
 
       setSelectedResources((prevSelected) =>
@@ -230,7 +259,10 @@ function ResourcesSelection() {
         toast.error("Ha ocurrido un error inesperado al eliminar el recurso");
       }
     } finally {
-      setIsMutatingSelectedResource(false);
+      setResourceBeingRemovedId(null);
+      setSelectedResourcesStatus((prevStatus) =>
+        prevStatus === "removing" ? "idle" : prevStatus
+      );
     }
   };
 
@@ -238,7 +270,7 @@ function ResourcesSelection() {
     if (!token || selectedResources.length === 0) return;
 
     try {
-      setIsSavingOrder(true);
+      setSelectedResourcesStatus("reordering");
 
       const orderedIds = selectedResources.map(
         (selectedResource) => selectedResource.id
@@ -253,13 +285,11 @@ function ResourcesSelection() {
         toast.error("Ha ocurrido un error inesperado al guardar el orden");
       }
     } finally {
-      setIsSavingOrder(false);
+      setSelectedResourcesStatus((prevStatus) =>
+        prevStatus === "reordering" ? "idle" : prevStatus
+      );
     }
   };
-
-  const overlayMessage = isSavingOrder
-    ? "Guardando orden..."
-    : "Procesando selección...";
 
   return (
     <Accordion
@@ -280,28 +310,24 @@ function ResourcesSelection() {
                 onSelectResource={setSelectedResourceId}
                 resources={resources}
                 groupedResources={groupedResources}
-                disabled={isProcessingSelectedResources || isLoadingResources}
+                disabled={isSelectorDisabled}
               />
               <Button
                 variant="default"
                 type="button"
                 className="w-full sm:w-auto"
                 onClick={handleAddSelectedResource}
-                disabled={
-                  !selectedResourceId ||
-                  isProcessingSelectedResources ||
-                  isLoadingResources
-                }
+                disabled={isAddButtonDisabled}
               >
-                {isProcessingSelectedResources ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {isSavingOrder ? "Guardando..." : "Procesando..."}
-                  </span>
-                ) : isLoadingResources ? (
+                {isLoadingResources ? (
                   <span className="inline-flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" /> Cargando
                     recursos...
+                  </span>
+                ) : isAddingSelectedResource ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Agregando recurso...
                   </span>
                 ) : (
                   "Agregar recurso"
@@ -309,24 +335,42 @@ function ResourcesSelection() {
               </Button>
             </div>
 
-            {isLoadingResources && (
-              <div className="flex items-center gap-2 text-sm text-slate-600">
-                <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-                Cargando recursos disponibles...
-              </div>
-            )}
-
             <div className="mt-4 relative">
-              {isProcessingSelectedResources && (
+              {showSelectionOverlay && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/70 backdrop-blur-sm">
                   <Loader2 className="mr-2 h-5 w-5 animate-spin text-slate-500" />
-                  <span className="text-sm text-slate-600">{overlayMessage}</span>
+                  <span className="text-sm text-slate-600">
+                    Guardando orden...
+                  </span>
                 </div>
               )}
-              {isLoadingSelectedResources ? (
-                <p>Cargando recursos seleccionados...</p>
+              {isFetchingSelectedResources ? (
+                <ul className="space-y-2">
+                  {[0, 1, 2].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-2"
+                    >
+                      <Skeleton className="h-8 w-8 rounded-md bg-muted" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4 bg-muted" />
+                        <Skeleton className="h-3 w-1/3 bg-muted" />
+                      </div>
+                      <Skeleton className="h-4 w-10 bg-muted" />
+                      <Skeleton className="h-8 w-8 rounded-md bg-muted" />
+                    </li>
+                  ))}
+                </ul>
               ) : selectedResources.length === 0 ? (
-                <p>No hay recursos seleccionados.</p>
+                <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-slate-200 bg-slate-50/80 px-6 py-12 text-center">
+                  <PackageOpen className="h-10 w-10 text-slate-300" />
+                  <p className="text-sm font-medium text-slate-700">
+                    Aún no has seleccionado recursos
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Usa el buscador de arriba para agregar los recursos que necesitas.
+                  </p>
+                </div>
               ) : (
                 <DndContext
                   sensors={sensors}
@@ -343,11 +387,13 @@ function ResourcesSelection() {
                     <ul
                       className={cn(
                         "space-y-2",
-                        isProcessingSelectedResources && "pointer-events-none"
+                        isListInteractionLocked && "pointer-events-none opacity-80"
                       )}
                     >
                       {selectedResources.map((selectedResource) => {
                         const relatedResource = selectedResource.resource;
+                        const isBeingRemoved =
+                          resourceBeingRemovedId === selectedResource.id;
 
                         return (
                           <SortableSelectedResourceItem
@@ -359,7 +405,10 @@ function ResourcesSelection() {
                                 : "Recurso no encontrado"
                             }
                             onRemove={handleRemoveSelectedResource}
-                            disabled={isProcessingSelectedResources}
+                            disabled={isListInteractionLocked}
+                            isBeingRemoved={
+                              isBeingRemoved && isRemovingSelectedResource
+                            }
                           />
                         );
                       })}
@@ -375,10 +424,10 @@ function ResourcesSelection() {
                     className="w-full"
                     onClick={handleSaveResourcesOrder}
                     disabled={
-                      selectedResources.length <= 1 || isProcessingSelectedResources
+                      selectedResources.length <= 1 || isSelectionActionInFlight
                     }
                   >
-                    {isSavingOrder ? (
+                    {isReorderingSelectedResources ? (
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Guardando orden...
@@ -404,6 +453,7 @@ type SortableSelectedResourceItemProps = {
   displayLabel: string;
   onRemove: (selectedResource: SelectedResource) => Promise<void> | void;
   disabled?: boolean;
+  isBeingRemoved?: boolean;
 };
 
 function SortableSelectedResourceItem({
@@ -411,6 +461,7 @@ function SortableSelectedResourceItem({
   displayLabel,
   onRemove,
   disabled = false,
+  isBeingRemoved = false,
 }: SortableSelectedResourceItemProps) {
   const {
     attributes,
@@ -419,7 +470,7 @@ function SortableSelectedResourceItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: selectedResource.id });
+  } = useSortable({ id: selectedResource.id, disabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -434,7 +485,8 @@ function SortableSelectedResourceItem({
       style={style}
       className={cn(
         "flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-4 py-2",
-        isDragging && "shadow-lg bg-white"
+        isDragging && "shadow-lg bg-white",
+        isBeingRemoved && "opacity-70"
       )}
     >
       <button
@@ -463,13 +515,19 @@ function SortableSelectedResourceItem({
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.stopPropagation();
-          void onRemove(selectedResource);
+          if (!isBeingRemoved) {
+            void onRemove(selectedResource);
+          }
         }}
         className="text-red-500 hover:text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-200 focus-visible:ring-offset-2"
-        disabled={disabled}
+        disabled={disabled || isBeingRemoved}
         aria-label={`Eliminar ${displayLabel}`}
       >
-        <Trash2 className="h-4 w-4" />
+        {isBeingRemoved ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Trash2 className="h-4 w-4" />
+        )}
       </Button>
     </li>
   );
