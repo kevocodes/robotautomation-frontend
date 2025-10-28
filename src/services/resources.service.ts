@@ -65,7 +65,7 @@ export const selectAvailableResource = async (
   return data;
 };
 
-export const unselectResource = async (
+export const unselectAvailableResource = async (
   resourceId: string,
   token: string
 ): Promise<void> => {
@@ -87,8 +87,7 @@ export const unselectResource = async (
 };
 
 export const reorderSelectedResources = async (
-  selectedResourceId: string,
-  newPriority: number,
+  orderedIds: string[],
   token: string
 ): Promise<void> => {
   const response = await fetch(`${BASE_URL}/resources/adjust-priorities`, {
@@ -98,16 +97,11 @@ export const reorderSelectedResources = async (
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      selectedResourceId,
-      newPriority,
+      orderedIds,
     }),
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
-      throw new ResponseError("Resource not found", response.status);
-    }
-
     throw new ResponseError(
       "Failed to reorder selected resources",
       response.status

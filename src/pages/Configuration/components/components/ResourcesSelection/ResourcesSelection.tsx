@@ -4,6 +4,8 @@ import { ResponseError } from "@/models/responseError.model";
 import {
   getResources,
   getSelectedResources,
+  selectAvailableResource,
+  unselectAvailableResource,
 } from "@/services/resources.service";
 import { useAuth } from "@/stores/auth.store";
 import { AccordionContent, AccordionItem } from "@radix-ui/react-accordion";
@@ -12,7 +14,7 @@ import { toast } from "sonner";
 import ResourceSearchableSelector from "./components/ResourceSearchableSelector";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Loader2, Trash2 } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -28,7 +30,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
 
 function ResourcesSelection() {
   const [selectedResourceId, setSelectedResourceId] = useState("");
@@ -41,6 +46,8 @@ function ResourcesSelection() {
   >([]);
   const [isLoadingSelectedResources, setIsLoadingSelectedResources] =
     useState<boolean>(false);
+  const [isMutatingSelectedResource, setIsMutatingSelectedResource] =
+    useState<boolean>(false);
 
   const token = useAuth((state) => state.token);
 
@@ -51,7 +58,10 @@ function ResourcesSelection() {
         const response = await getResources(token!);
         setResources(response);
       } catch (error) {
-        if (error instanceof ResponseError) return toast.error(error.message);
+        if (error instanceof ResponseError) {
+          toast.error(error.message);
+          return;
+        }
         toast.error("Ha ocurrido un error inesperado al cargar los recursos");
       } finally {
         setIsLoadingResources(false);
@@ -70,7 +80,10 @@ function ResourcesSelection() {
         const response = await getSelectedResources(token!);
         setSelectedResources(response);
       } catch (error) {
-        if (error instanceof ResponseError) return toast.error(error.message);
+        if (error instanceof ResponseError) {
+          toast.error(error.message);
+          return;
+        }
         toast.error(
           "Ha ocurrido un error inesperado al cargar los recursos seleccionados"
         );
@@ -134,27 +147,8 @@ function ResourcesSelection() {
     });
   };
 
-  const handleRemoveSelectedResource = (selectedResourceId: string) => {
-    setSelectedResources((prevSelected) =>
-      prevSelected
-        .filter((item) => item.id !== selectedResourceId)
-        .map((item, index) => ({
-          ...item,
-          priority: index + 1,
-        }))
-    );
-  };
-
-  const generateTemporaryId = () => {
-    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-      return crypto.randomUUID();
-    }
-
-    return `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  };
-
-  const handleAddSelectedResource = () => {
-    if (!selectedResourceId) return;
+  const handleAddSelectedResource = async () => {
+    if (!selectedResourceId || !token) return;
 
     const resourceToAdd = resources.find(
       (resource) => resource.id === selectedResourceId
@@ -165,26 +159,75 @@ function ResourcesSelection() {
       return;
     }
 
-    setSelectedResources((prevSelected) => {
-      if (prevSelected.some((item) => item.resourceId === resourceToAdd.id)) {
-        return prevSelected;
+    if (
+      selectedResources.some((item) => item.resourceId === resourceToAdd.id)
+    ) {
+      toast.error("El recurso ya se encuentra seleccionado");
+      return;
+    }
+
+    try {
+      setIsMutatingSelectedResource(true);
+      const savedSelectedResource = await selectAvailableResource(
+        resourceToAdd.id,
+        token
+      );
+
+      setSelectedResources((prevSelected) => {
+        const updated = [
+          ...prevSelected,
+          {
+            ...savedSelectedResource,
+            resource: savedSelectedResource.resource ?? resourceToAdd,
+          },
+        ];
+
+        return updated
+          .sort((a, b) => a.priority - b.priority)
+          .map((item, index) => ({
+            ...item,
+            priority: index + 1,
+          }));
+      });
+
+      setSelectedResourceId("");
+    } catch (error) {
+      if (error instanceof ResponseError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Ha ocurrido un error inesperado al guardar el recurso");
       }
+    } finally {
+      setIsMutatingSelectedResource(false);
+    }
+  };
 
-      const now = new Date().toISOString();
+  const handleRemoveSelectedResource = async (
+    selectedResource: SelectedResource
+  ) => {
+    if (!token) return;
 
-      const newSelectedResource: SelectedResource = {
-        id: generateTemporaryId(),
-        resourceId: resourceToAdd.id,
-        priority: prevSelected.length + 1,
-        createdAt: now,
-        updatedAt: now,
-        resource: resourceToAdd,
-      };
+    try {
+      setIsMutatingSelectedResource(true);
+      await unselectAvailableResource(selectedResource.id, token);
 
-      return [...prevSelected, newSelectedResource];
-    });
-
-    setSelectedResourceId("");
+      setSelectedResources((prevSelected) =>
+        prevSelected
+          .filter((item) => item.id !== selectedResource.id)
+          .map((item, index) => ({
+            ...item,
+            priority: index + 1,
+          }))
+      );
+    } catch (error) {
+      if (error instanceof ResponseError) {
+        toast.error(error.message);
+      } else {
+        toast.error("Ha ocurrido un error inesperado al eliminar el recurso");
+      }
+    } finally {
+      setIsMutatingSelectedResource(false);
+    }
   };
 
   return (
@@ -206,19 +249,50 @@ function ResourcesSelection() {
                 onSelectResource={setSelectedResourceId}
                 resources={resources}
                 groupedResources={groupedResources}
+                disabled={isMutatingSelectedResource || isLoadingResources}
               />
               <Button
                 variant="default"
                 type="button"
                 className="w-full sm:w-auto"
                 onClick={handleAddSelectedResource}
-                disabled={!selectedResourceId}
+                disabled={
+                  !selectedResourceId ||
+                  isMutatingSelectedResource ||
+                  isLoadingResources
+                }
               >
-                Agregar recurso
+                {isMutatingSelectedResource ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Procesando...
+                  </span>
+                ) : isLoadingResources ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Cargando
+                    recursos...
+                  </span>
+                ) : (
+                  "Agregar recurso"
+                )}
               </Button>
             </div>
 
-            <div className="mt-4">
+            {isLoadingResources && (
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                Cargando recursos disponibles...
+              </div>
+            )}
+
+            <div className="mt-4 relative">
+              {isMutatingSelectedResource && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/70 backdrop-blur-sm">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin text-slate-500" />
+                  <span className="text-sm text-slate-600">
+                    Procesando selección...
+                  </span>
+                </div>
+              )}
               {isLoadingSelectedResources ? (
                 <p>Cargando recursos seleccionados...</p>
               ) : selectedResources.length === 0 ? (
@@ -236,7 +310,12 @@ function ResourcesSelection() {
                     )}
                     strategy={verticalListSortingStrategy}
                   >
-                    <ul className="space-y-2">
+                    <ul
+                      className={cn(
+                        "space-y-2",
+                        isMutatingSelectedResource && "pointer-events-none"
+                      )}
+                    >
                       {selectedResources.map((selectedResource) => {
                         const relatedResource = selectedResource.resource;
 
@@ -250,6 +329,7 @@ function ResourcesSelection() {
                                 : "Recurso no encontrado"
                             }
                             onRemove={handleRemoveSelectedResource}
+                            disabled={isMutatingSelectedResource}
                           />
                         );
                       })}
@@ -270,13 +350,15 @@ export default ResourcesSelection;
 type SortableSelectedResourceItemProps = {
   selectedResource: SelectedResource;
   displayLabel: string;
-  onRemove: (selectedResourceId: string) => void;
+  onRemove: (selectedResource: SelectedResource) => Promise<void> | void;
+  disabled?: boolean;
 };
 
 function SortableSelectedResourceItem({
   selectedResource,
   displayLabel,
   onRemove,
+  disabled = false,
 }: SortableSelectedResourceItemProps) {
   const {
     attributes,
@@ -307,6 +389,7 @@ function SortableSelectedResourceItem({
         type="button"
         className="flex h-8 w-8 items-center justify-center rounded-md border border-transparent bg-transparent text-slate-400 transition-colors hover:text-slate-600 focus-visible:border-slate-300 focus-visible:outline-none"
         aria-label={`Reordenar ${displayLabel}`}
+        disabled={disabled}
         {...attributes}
         {...listeners}
       >
@@ -314,7 +397,9 @@ function SortableSelectedResourceItem({
       </button>
       <div className="flex-1">
         <p className="text-sm font-medium text-slate-800">{displayLabel}</p>
-        <p className="text-xs text-slate-500">Ubicación: {selectedResource.resource?.location}</p>
+        <p className="text-xs text-slate-500">
+          Ubicación: {selectedResource.resource?.location}
+        </p>
       </div>
       <span className="text-sm font-semibold text-slate-500">
         #{priorityLabel}
@@ -326,9 +411,10 @@ function SortableSelectedResourceItem({
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => {
           event.stopPropagation();
-          onRemove(selectedResource.id);
+          void onRemove(selectedResource);
         }}
         className="text-red-500 hover:text-red-600 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-200 focus-visible:ring-offset-2"
+        disabled={disabled}
         aria-label={`Eliminar ${displayLabel}`}
       >
         <Trash2 className="h-4 w-4" />

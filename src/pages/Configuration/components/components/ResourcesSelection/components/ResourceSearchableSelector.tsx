@@ -11,24 +11,31 @@ interface ResourceSearchableSelectorProps {
   onSelectResource: (resourceId: string) => void;
   resources: Resource[];
   groupedResources: { [key: string]: Resource[] };
+  disabled?: boolean;
 }
 
-function ResourceSearchableSelector({ selectedResourceId, onSelectResource, resources, groupedResources }: ResourceSearchableSelectorProps) {
+function ResourceSearchableSelector({ selectedResourceId, onSelectResource, resources, groupedResources, disabled = false }: ResourceSearchableSelectorProps) {
   const [open, setOpen] = useState(false);
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (disabled) return;
+    setOpen(nextOpen);
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className="w-full sm:w-[200px] justify-between"
         >
           <span className="truncate">
             {selectedResourceId
               ? resources.find((resource) => resource.id === selectedResourceId)?.name
-              : "Select resource..."}
+              : "Selecciona un recurso"}
           </span>
           <ChevronsUpDown className="ml-2 shrink-0 opacity-50" />
         </Button>
