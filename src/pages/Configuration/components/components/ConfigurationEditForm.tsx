@@ -11,27 +11,44 @@ import { Input } from "@/components/ui/input";
 import { AppConfig } from "@/models/appConfig.model";
 import { ResponseError } from "@/models/responseError.model";
 import { AppConfigSchema } from "@/schemas/appConfig.schema";
-import { updateAppConfig } from "@/services/appConfig.service";
+import { getAppConfig, updateAppConfig } from "@/services/appConfig.service";
 import { useAuth } from "@/stores/auth.store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 
-interface ConfigurationEditFormProps {
-  configuration: AppConfig;
-}
+function ConfigurationEditForm() {
+  const [loading, setLoading] = useState(false);
+  const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
 
-function ConfigurationEditForm({ configuration }: ConfigurationEditFormProps) {
   const token = useAuth((state) => state.token);
 
   const form = useForm<z.infer<typeof AppConfigSchema>>({
     resolver: zodResolver(AppConfigSchema),
-    defaultValues: {
-      cleaningStartOffsetMinutes: configuration.cleaningStartOffsetMinutes,
-    },
   });
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const config = await getAppConfig(token!);
+        setAppConfig(config);
+        form.reset(config);
+      } catch (error) {
+        if (error instanceof ResponseError) return toast.error(error.message);
+        toast.error("Ha ocurrido un error inesperado al cargar la configuración");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (token) {
+      fetchData();
+    }
+  }, [form, token]);
 
   const onSubmit = async (values: z.infer<typeof AppConfigSchema>) => {
     try {
@@ -42,6 +59,10 @@ function ConfigurationEditForm({ configuration }: ConfigurationEditFormProps) {
       toast.error("Ha ocurrido un error inesperado");
     }
   };
+
+  if (loading || !appConfig) {
+    return <ConfigurationEditForm.skeleton />;
+  }
 
   return (
     <Form {...form}>
@@ -83,3 +104,18 @@ function ConfigurationEditForm({ configuration }: ConfigurationEditFormProps) {
 }
 
 export default ConfigurationEditForm;
+
+ConfigurationEditForm.skeleton = function ConfigurationEditFormSkeleton() {
+  return (
+    <div className="space-y-8 bg-background w-full p-8 rounded-lg animate-pulse">
+      <div className="flex flex-col gap-2">
+        <div className="h-5 w-1/3 bg-muted rounded"></div>
+        <div className="h-10 w-full bg-muted rounded"></div>
+      </div>
+
+      <div className="flex gap-2">
+        <div className="h-10 w-full bg-muted rounded"></div>
+      </div>
+    </div>
+  );
+};
