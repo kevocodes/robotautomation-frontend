@@ -28,6 +28,7 @@ import RequireUnverifiedUser from "@/guards/unverifiedUser.guard";
 import ForgotPasword from "@/pages/ForgotPassword/ForgotPasword";
 import ResetPassword from "@/pages/ResetPassword/ResetPassword";
 import Reservations from "@/pages/Reservations/Reservations";
+import Configuration from "./pages/Configuration/Configuration";
 
 function App() {
   const token = useAuth((state) => state.token);
@@ -90,6 +91,7 @@ function App() {
                 path={`${PRIVATE_ROUTES.USERS_EDIT}/:userId`}
                 element={<UserEdit />}
               />
+              <Route path={PRIVATE_ROUTES.SETTINGS} element={<Configuration />} />
             </Route>
           </Route>
 

@@ -2,7 +2,7 @@ import { SidebarItem, SidebarItemLogout } from "./SidebarItem";
 import { PRIVATE_ROUTES } from "@/constants/routes";
 import { Role } from "@/models/user.model";
 import { useSidebar } from "@/stores/sidebar.store";
-import { CalendarClock, LogOut, User, UserCog } from "lucide-react";
+import { CalendarClock, Cog, LogOut, User, UserCog } from "lucide-react";
 
 interface SidebarContentProps {
   isMobile?: boolean;
@@ -38,6 +38,15 @@ export const SidebarContent = ({ isMobile }: SidebarContentProps) => {
         isSidebarOpen={isSidebarOpen}
       >
         <UserCog size={24} />
+      </SidebarItem>
+
+      <SidebarItem
+        label="Configuración"
+        to={PRIVATE_ROUTES.SETTINGS}
+        isSidebarOpen={isSidebarOpen}
+        allowedRoles={[Role.ADMIN]}
+      >
+        <Cog size={24} />
       </SidebarItem>
 
       <SidebarItemLogout label="Cerrar sesión" isSidebarOpen={isSidebarOpen}>
