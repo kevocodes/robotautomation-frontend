@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 
 function AppLayout() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-[100dvh]">
       <NavBar />
       <section className="flex justify-between">
         <Sidebar />

@@ -39,7 +39,9 @@ function ConfigurationEditForm() {
         form.reset(config);
       } catch (error) {
         if (error instanceof ResponseError) return toast.error(error.message);
-        toast.error("Ha ocurrido un error inesperado al cargar la configuración");
+        toast.error(
+          "Ha ocurrido un error inesperado al cargar la configuración"
+        );
       } finally {
         setLoading(false);
       }
@@ -83,6 +85,26 @@ function ConfigurationEditForm() {
                   value={field.value.toString()}
                   onChange={(e) => field.onChange(Number(e.target.value))}
                   placeholder="Offset de inicio de limpieza en minutos"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="cleaningDurationMinutes"
+          render={({ field }) => (
+            <FormItem className="flex-1">
+              <FormLabel>Duración de limpieza (minutos)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  {...field}
+                  value={field.value.toString()}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  placeholder="Duración de limpieza en minutos"
                 />
               </FormControl>
               <FormMessage />

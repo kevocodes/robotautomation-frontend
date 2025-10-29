@@ -6,6 +6,11 @@ export const AppConfigSchema = z.object({
     .int({
       message: "Debe ser un número entero",
     })
-    .min(0)
+    .min(0),
+  cleaningDurationMinutes: z
+    .number()
+    .int({
+      message: "Debe ser un número entero",
+    })
+    .min(0),
 });
-
