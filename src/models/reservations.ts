@@ -2,6 +2,7 @@ export interface GetReservationsResponse {
   links: unknown[];
   message: null;
   reservations: Reservation[];
+  cleaningEvents: ReservationCleaningEvent[];
   startDateTime: string;
   endDateTime: string;
 }
@@ -32,4 +33,12 @@ export interface Reservation {
   originalEndDate: string;
   isCheckInEnabled: boolean;
   resourceStatusId: string;
+}
+
+export interface ReservationCleaningEvent {
+  startDate: string;
+  endDate: string;
+  resourceName: string;
+  color: string;
+  textColor: string;
 }

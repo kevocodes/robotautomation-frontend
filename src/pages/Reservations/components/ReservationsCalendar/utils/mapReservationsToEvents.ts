@@ -1,6 +1,7 @@
 import { EventInput } from "@fullcalendar/core";
 
 import { Reservation } from "@/models/reservations";
+import { ReservationEventExtendedProps } from "./calendarEvents.types";
 
 const buildReservationTitle = (reservation: Reservation): string => {
   const name = [reservation.firstName, reservation.lastName]
@@ -25,10 +26,11 @@ export const mapReservationsToEvents = (
     backgroundColor: reservation.color || undefined,
     textColor: reservation.textColor || undefined,
     extendedProps: {
+      type: "reservation",
       reservation,
       description: reservation.description,
       resourceName: reservation.resourceName,
       requiresApproval: reservation.requiresApproval,
-    },
+    } satisfies ReservationEventExtendedProps,
   }));
 };

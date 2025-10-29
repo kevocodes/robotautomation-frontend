@@ -1,19 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import esLocale from "@fullcalendar/core/locales/es";
-import { DatesSetArg, EventClickArg, EventContentArg } from "@fullcalendar/core";
+import {
+  DatesSetArg,
+  EventClickArg,
+  EventContentArg,
+  EventMountArg,
+} from "@fullcalendar/core";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { toast } from "sonner";
 
 import ResourceSearchableMultiSelector from "../ResourceSearchableMultiSelector/ResourceSearchableMultiSelector";
 import CalendarEventContent from "./components/CalendarEventContent";
-import ReservationDetailsDialog, {
+import CalendarEventDetailsDialog, {
   SelectedEventDetails,
-} from "./components/ReservationDetailsDialog";
+} from "./components/CalendarEventDetailsDialog";
+import { mapCleaningEventsToEvents } from "./utils/mapCleaningEventsToEvents";
 import { mapReservationsToEvents } from "./utils/mapReservationsToEvents";
+import { CalendarEventExtendedProps } from "./utils/calendarEvents.types";
 import { Button } from "@/components/ui/button";
-import { Reservation } from "@/models/reservations";
+import { Reservation, ReservationCleaningEvent } from "@/models/reservations";
 import { Resource, SelectedResource } from "@/models/resources.model";
 import { ResponseError } from "@/models/responseError.model";
 import { getReservationsByResources } from "@/services/reservations.service";
@@ -39,6 +46,9 @@ function ReservationsCalendar() {
     useState(false);
   const [isLoadingReservations, setIsLoadingReservations] = useState(false);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [reservationsCleaningEvents, setReservationsCleaningEvents] = useState<
+    ReservationCleaningEvent[]
+  >([]);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] =
     useState<SelectedEventDetails | null>(null);
@@ -49,6 +59,7 @@ function ReservationsCalendar() {
     end: string;
   } | null>(null);
   const calendarRef = useRef<FullCalendar | null>(null);
+  const calendarContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -81,10 +92,12 @@ function ReservationsCalendar() {
     if (!calendarRange || filteredResourceIds.length === 0) {
       setIsLoadingReservations(false);
       setReservations([]);
+      setReservationsCleaningEvents([]);
       return;
     }
 
     const abortController = new AbortController();
+    let isCurrentRequest = true;
 
     const loadReservations = async () => {
       try {
@@ -96,7 +109,9 @@ function ReservationsCalendar() {
           token,
           abortController.signal
         );
-        setReservations(response);
+        if (!isCurrentRequest) return;
+        setReservations(response.reservations);
+        setReservationsCleaningEvents(response.cleaningEvents);
       } catch (error) {
         if (error instanceof ResponseError) {
           toast.error(error.message);
@@ -109,16 +124,42 @@ function ReservationsCalendar() {
           "Ha ocurrido un error inesperado al cargar las reservas de los recursos seleccionados"
         );
       } finally {
-        setIsLoadingReservations(false);
+        if (isCurrentRequest) {
+          setIsLoadingReservations(false);
+        }
       }
     };
 
     void loadReservations();
 
     return () => {
+      isCurrentRequest = false;
       abortController.abort();
     };
   }, [calendarRange, filteredResourceIds, token]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const containerElement = calendarContainerRef.current;
+    if (!containerElement) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      const api = calendarRef.current?.getApi();
+      if (!api) return;
+      api.updateSize();
+    });
+
+    observer.observe(containerElement);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const selectableResourceIds = useMemo(() => {
     return Array.from(
@@ -202,8 +243,12 @@ function ReservationsCalendar() {
   }, [selectableResourceIds]);
 
   const calendarEvents = useMemo(() => {
-    return mapReservationsToEvents(reservations);
-  }, [reservations]);
+    const mappedReservations = mapReservationsToEvents(reservations);
+    const mappedCleaningEvents =
+      mapCleaningEventsToEvents(reservationsCleaningEvents);
+
+    return [...mappedReservations, ...mappedCleaningEvents];
+  }, [reservations, reservationsCleaningEvents]);
 
   const renderEventContent = useCallback(
     (eventContent: EventContentArg) => (
@@ -215,19 +260,48 @@ function ReservationsCalendar() {
     []
   );
 
+  const handleEventDidMount = useCallback((eventMountArg: EventMountArg) => {
+    const extendedProps =
+      (eventMountArg.event.extendedProps as CalendarEventExtendedProps | undefined) ??
+      undefined;
+
+    if (extendedProps?.type === "cleaning") {
+      eventMountArg.el.style.minHeight = "18px";
+      eventMountArg.el.style.display = "flex";
+      eventMountArg.el.style.alignItems = "center";
+      eventMountArg.el.style.justifyContent = "center";
+    }
+  }, []);
+
   const handleEventClick = useCallback((eventClickArg: EventClickArg) => {
-    const reservation = eventClickArg.event.extendedProps
-      ?.reservation as Reservation | undefined;
+    const extendedProps =
+      (eventClickArg.event.extendedProps as CalendarEventExtendedProps | undefined) ??
+      undefined;
 
-    if (!reservation) return;
+    if (!extendedProps) return;
 
-    setSelectedEvent({
-      title: eventClickArg.event.title,
-      start: eventClickArg.event.start,
-      end: eventClickArg.event.end,
-      reservation,
-    });
-    setIsDetailsDialogOpen(true);
+    if (extendedProps.type === "reservation") {
+      setSelectedEvent({
+        type: "reservation",
+        title: eventClickArg.event.title,
+        start: eventClickArg.event.start,
+        end: eventClickArg.event.end,
+        reservation: extendedProps.reservation,
+      });
+      setIsDetailsDialogOpen(true);
+      return;
+    }
+
+    if (extendedProps.type === "cleaning") {
+      setSelectedEvent({
+        type: "cleaning",
+        title: eventClickArg.event.title,
+        start: eventClickArg.event.start,
+        end: eventClickArg.event.end,
+        cleaningEvent: extendedProps.cleaningEvent,
+      });
+      setIsDetailsDialogOpen(true);
+    }
   }, []);
 
   const handleDetailsDialogOpenChange = useCallback((open: boolean) => {
@@ -277,7 +351,6 @@ function ReservationsCalendar() {
           isLoadingSelectedResources || selectableResourceIds.length === 0
         }
       />
-
       <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -325,7 +398,10 @@ function ReservationsCalendar() {
           </div>
         </div>
 
-        <div className="relative mt-4 rounded-md border border-border bg-card">
+        <div
+          ref={calendarContainerRef}
+          className="relative mt-4 rounded-md border border-border bg-card"
+        >
           {isLoadingReservations && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-card/80 backdrop-blur-sm">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -339,6 +415,11 @@ function ReservationsCalendar() {
             events={calendarEvents}
             height="auto"
             contentHeight="auto"
+            slotDuration="00:10:00"
+            slotLabelInterval="01:00"
+            slotMinTime="06:00:00"
+            slotMaxTime="21:00:00"
+            scrollTime="06:00:00"
             eventTimeFormat={{
               hour: "numeric",
               minute: "2-digit",
@@ -351,6 +432,7 @@ function ReservationsCalendar() {
             }}
             eventContent={renderEventContent}
             eventClick={handleEventClick}
+            eventDidMount={handleEventDidMount}
             nowIndicator={true}
             now={new Date().toISOString()}
             headerToolbar={false}
@@ -359,7 +441,7 @@ function ReservationsCalendar() {
         </div>
       </div>
 
-      <ReservationDetailsDialog
+      <CalendarEventDetailsDialog
         open={isDetailsDialogOpen}
         onOpenChange={handleDetailsDialogOpenChange}
         event={selectedEvent}

@@ -1,4 +1,4 @@
-import { GetReservationsResponse, Reservation } from "@/models/reservations";
+import { GetReservationsResponse, Reservation, ReservationCleaningEvent } from "@/models/reservations";
 import { ResponseError } from "@/models/responseError.model";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
@@ -9,7 +9,7 @@ export const getReservationsByResources = async (
   endDateTime: string,
   token: string,
   signal?: AbortSignal
-): Promise<Reservation[]> => {
+): Promise<{ reservations: Reservation[]; cleaningEvents: ReservationCleaningEvent[] }> => {
   const queryParams = new URLSearchParams();
   resourceIds.forEach((id) => queryParams.append("resourceIds", id));
   queryParams.append("startDateTime", startDateTime);
@@ -29,7 +29,7 @@ export const getReservationsByResources = async (
 
   const { data } = await response.json();
 
-  const reservationsResponse: GetReservationsResponse = data;
+  const { reservations, cleaningEvents }: GetReservationsResponse = data;
 
-  return reservationsResponse.reservations;
+  return { reservations, cleaningEvents };
 };
