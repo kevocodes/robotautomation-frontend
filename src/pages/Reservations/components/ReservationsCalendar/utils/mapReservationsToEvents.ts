@@ -15,11 +15,19 @@ const buildReservationTitle = (reservation: Reservation): string => {
   return "Reserva sin título";
 };
 
+const buildReservationEventId = (reservation: Reservation, index: number) => {
+  if (reservation.referenceNumber?.trim()) {
+    return `${reservation.referenceNumber}-${reservation.resourceId}`;
+  }
+
+  return `reservation-${reservation.resourceId}-${reservation.startDate}-${reservation.endDate}-${index}`;
+};
+
 export const mapReservationsToEvents = (
   reservations: Reservation[]
 ): EventInput[] => {
-  return reservations.map((reservation) => ({
-    id: reservation.referenceNumber,
+  return reservations.map((reservation, index) => ({
+    id: buildReservationEventId(reservation, index),
     title: buildReservationTitle(reservation),
     start: reservation.startDate,
     end: reservation.endDate,

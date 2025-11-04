@@ -61,6 +61,54 @@ function ReservationsCalendar() {
   const calendarRef = useRef<FullCalendar | null>(null);
   const calendarContainerRef = useRef<HTMLDivElement | null>(null);
 
+  const selectableResourceIds = useMemo(() => {
+    return Array.from(
+      new Set(
+        selectedResources.map(
+          (selectedResource) => selectedResource.resource.externalResourceId
+        )
+      )
+    );
+  }, [selectedResources]);
+
+  const normalizedFilteredResourceIds = useMemo(() => {
+    if (!filteredResourceIds.length) {
+      return [] as string[];
+    }
+
+    const uniqueResourceIds = Array.from(new Set(filteredResourceIds));
+
+    if (!selectableResourceIds.length) {
+      return uniqueResourceIds;
+    }
+
+    const resourceOrder = new Map(
+      selectableResourceIds.map((resourceId, index) => [resourceId, index])
+    );
+
+    return uniqueResourceIds.sort((resourceA, resourceB) => {
+      const orderA = resourceOrder.get(resourceA) ?? Number.MAX_SAFE_INTEGER;
+      const orderB = resourceOrder.get(resourceB) ?? Number.MAX_SAFE_INTEGER;
+
+      return orderA - orderB;
+    });
+  }, [filteredResourceIds, selectableResourceIds]);
+
+  useEffect(() => {
+    if (normalizedFilteredResourceIds.length !== filteredResourceIds.length) {
+      setFilteredResourceIds(normalizedFilteredResourceIds);
+      return;
+    }
+
+    const hasSameOrder = normalizedFilteredResourceIds.every(
+      (resourceId, index) => resourceId === filteredResourceIds[index]
+    );
+
+    if (!hasSameOrder) {
+      setFilteredResourceIds(normalizedFilteredResourceIds);
+    }
+  }, [filteredResourceIds, normalizedFilteredResourceIds]);
+
   useEffect(() => {
     if (!token) return;
 
@@ -89,7 +137,7 @@ function ReservationsCalendar() {
   useEffect(() => {
     if (!token) return;
 
-    if (!calendarRange || filteredResourceIds.length === 0) {
+    if (!calendarRange || normalizedFilteredResourceIds.length === 0) {
       setIsLoadingReservations(false);
       setReservations([]);
       setReservationsCleaningEvents([]);
@@ -103,7 +151,7 @@ function ReservationsCalendar() {
       try {
         setIsLoadingReservations(true);
         const response = await getReservationsByResources(
-          filteredResourceIds,
+          normalizedFilteredResourceIds,
           calendarRange.start,
           calendarRange.end,
           token,
@@ -136,10 +184,13 @@ function ReservationsCalendar() {
       isCurrentRequest = false;
       abortController.abort();
     };
-  }, [calendarRange, filteredResourceIds, token]);
+  }, [calendarRange, normalizedFilteredResourceIds, token]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof ResizeObserver === "undefined") {
+    if (
+      typeof window === "undefined" ||
+      typeof ResizeObserver === "undefined"
+    ) {
       return;
     }
 
@@ -160,16 +211,6 @@ function ReservationsCalendar() {
       observer.disconnect();
     };
   }, []);
-
-  const selectableResourceIds = useMemo(() => {
-    return Array.from(
-      new Set(
-        selectedResources.map(
-          (selectedResource) => selectedResource.resource.externalResourceId
-        )
-      )
-    );
-  }, [selectedResources]);
 
   const groupedResources = useMemo(() => {
     const groups: Record<string, Resource[]> = {};
@@ -244,8 +285,9 @@ function ReservationsCalendar() {
 
   const calendarEvents = useMemo(() => {
     const mappedReservations = mapReservationsToEvents(reservations);
-    const mappedCleaningEvents =
-      mapCleaningEventsToEvents(reservationsCleaningEvents);
+    const mappedCleaningEvents = mapCleaningEventsToEvents(
+      reservationsCleaningEvents
+    );
 
     return [...mappedReservations, ...mappedCleaningEvents];
   }, [reservations, reservationsCleaningEvents]);
@@ -262,8 +304,9 @@ function ReservationsCalendar() {
 
   const handleEventDidMount = useCallback((eventMountArg: EventMountArg) => {
     const extendedProps =
-      (eventMountArg.event.extendedProps as CalendarEventExtendedProps | undefined) ??
-      undefined;
+      (eventMountArg.event.extendedProps as
+        | CalendarEventExtendedProps
+        | undefined) ?? undefined;
 
     if (extendedProps?.type === "cleaning") {
       eventMountArg.el.style.minHeight = "18px";
@@ -275,8 +318,9 @@ function ReservationsCalendar() {
 
   const handleEventClick = useCallback((eventClickArg: EventClickArg) => {
     const extendedProps =
-      (eventClickArg.event.extendedProps as CalendarEventExtendedProps | undefined) ??
-      undefined;
+      (eventClickArg.event.extendedProps as
+        | CalendarEventExtendedProps
+        | undefined) ?? undefined;
 
     if (!extendedProps) return;
 
