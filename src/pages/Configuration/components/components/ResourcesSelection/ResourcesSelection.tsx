@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { Accordion, AccordionTrigger } from "@/components/ui/accordion";
-import { AccordionContent, AccordionItem } from "@radix-ui/react-accordion";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import ResourceSearchableSelector from "./components/ResourceSearchableSelector";
@@ -52,13 +50,7 @@ function ResourcesSelection() {
   };
 
   return (
-    <Accordion
-      type="single"
-      collapsible
-      className="w-full"
-      defaultValue="resources-selection"
-    >
-      <div className="bg-white p-8 rounded-b-lg flex flex-col gap-4">
+      <div className="bg-white p-8 rounded-b-lg flex flex-col gap-4 w-full">
         <p className="text-sm font-medium">Administrar recursos</p>
         <div className="flex gap-2 flex-wrap">
           <ResourceSearchableSelector
@@ -109,7 +101,6 @@ function ResourcesSelection() {
           onChangeDirection={changeSelectedResourceDirection}
         />
       </div>
-    </Accordion>
   );
 }
 
