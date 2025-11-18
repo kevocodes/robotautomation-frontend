@@ -1,4 +1,4 @@
-import { Resource, SelectedResource } from "@/models/resources.model";
+import { Resource, RoomDirection, SelectedResource } from "@/models/resources.model";
 import { ResponseError } from "@/models/responseError.model";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
@@ -108,3 +108,38 @@ export const reorderSelectedResources = async (
     );
   }
 };
+
+export const changeSelectedResourceDirection = async (
+  resourceId: string,
+  newDirection: RoomDirection,
+  token: string
+): Promise<SelectedResource> => {
+  const response = await fetch(
+    `${BASE_URL}/resources/${resourceId}/change-room-direction`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        roomDirection: newDirection,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new ResponseError("Resource not found", response.status);
+    }
+
+    throw new ResponseError(
+      "Failed to change resource direction",
+      response.status
+    );
+  }
+
+  const { data } = await response.json();
+
+  return data;
+}

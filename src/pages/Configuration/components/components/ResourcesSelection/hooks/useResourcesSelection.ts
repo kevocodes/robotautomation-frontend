@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { arrayMove } from "@dnd-kit/sortable";
 
-import { Resource, SelectedResource } from "@/models/resources.model";
+import {
+  Resource,
+  RoomDirection,
+  SelectedResource,
+} from "@/models/resources.model";
 import { ResponseError } from "@/models/responseError.model";
 import {
   getResources,
@@ -10,6 +14,7 @@ import {
   reorderSelectedResources,
   selectAvailableResource,
   unselectAvailableResource,
+  changeSelectedResourceDirection as updateSelectedResourceDirection,
 } from "@/services/resources.service";
 import { useAuth } from "@/stores/auth.store";
 
@@ -38,7 +43,8 @@ export function useResourcesSelection() {
   const isFetchingSelectedResources = selectedResourcesStatus === "loading";
   const isAddingSelectedResource = selectedResourcesStatus === "adding";
   const isRemovingSelectedResource = selectedResourcesStatus === "removing";
-  const isReorderingSelectedResources = selectedResourcesStatus === "reordering";
+  const isReorderingSelectedResources =
+    selectedResourcesStatus === "reordering";
   const isSelectionActionInFlight =
     isAddingSelectedResource ||
     isRemovingSelectedResource ||
@@ -318,6 +324,41 @@ export function useResourcesSelection() {
     }
   }, [selectedResources, token]);
 
+  const changeSelectedResourceDirection = useCallback(
+    async (selectedResourceId: string, newDirection: RoomDirection) => {
+      if (!token) {
+        return;
+      }
+
+      try {
+        await updateSelectedResourceDirection(
+          selectedResourceId,
+          newDirection,
+          token
+        );
+
+        setSelectedResources((prevSelected) =>
+          prevSelected.map((item) =>
+            item.id === selectedResourceId
+              ? { ...item, roomDirection: newDirection }
+              : item
+          )
+        );
+
+        toast.success("Dirección del recurso actualizada correctamente");
+      } catch (error) {
+        if (error instanceof ResponseError) {
+          toast.error(error.message);
+        } else {
+          toast.error(
+            "Ha ocurrido un error inesperado al cambiar la dirección del recurso"
+          );
+        }
+      }
+    },
+    [token]
+  );
+
   return {
     resources,
     groupedResources,
@@ -337,5 +378,6 @@ export function useResourcesSelection() {
     removeSelectedResource,
     reorderSelectedResourcesLocally,
     saveResourcesOrder,
+    changeSelectedResourceDirection,
   };
 }

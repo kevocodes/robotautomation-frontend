@@ -16,12 +16,12 @@ import {
 } from "@dnd-kit/modifiers";
 import { Loader2, PackageOpen } from "lucide-react";
 
-import { SelectedResource } from "@/models/resources.model";
+import { RoomDirection, SelectedResource } from "@/models/resources.model";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { SelectedResourcesListItem } from "./SelectedResourcesListItem";
+import { SelectedResourcesListItem } from "./SelectedResourcesListItem/SelectedResourcesListItem";
 
 type SelectedResourcesSectionProps = {
   selectedResources: SelectedResource[];
@@ -36,6 +36,7 @@ type SelectedResourcesSectionProps = {
   onRemove: (selectedResource: SelectedResource) => Promise<void> | void;
   onReorder: (activeId: string, overId: string) => void;
   onSaveOrder: () => Promise<void> | void;
+  onChangeDirection: (selectedResourceId: string, newDirection: RoomDirection) => Promise<void> | void;
 };
 
 export function SelectedResourcesSection({
@@ -51,6 +52,7 @@ export function SelectedResourcesSection({
   onRemove,
   onReorder,
   onSaveOrder,
+  onChangeDirection,
 }: SelectedResourcesSectionProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -119,6 +121,8 @@ export function SelectedResourcesSection({
                     onRemove={onRemove}
                     disabled={isListInteractionLocked}
                     isBeingRemoved={isBeingRemoved}
+                    isThePriorityOne={selectedResource.priority === 1}
+                    onChangeDirection={onChangeDirection}
                   />
                 );
               })}
@@ -160,8 +164,7 @@ function SkeletonList() {
         <Skeleton
           key={item}
           className="rounded-md border h-[3.375rem]"
-        >
-        </Skeleton>
+        ></Skeleton>
       ))}
     </ul>
   );
