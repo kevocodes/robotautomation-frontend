@@ -20,6 +20,7 @@ import { mapCleaningEventsToEvents } from "./utils/mapCleaningEventsToEvents";
 import { mapReservationsToEvents } from "./utils/mapReservationsToEvents";
 import { CalendarEventExtendedProps } from "./utils/calendarEvents.types";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Reservation, ReservationCleaningEvent } from "@/models/reservations";
 import { Resource, SelectedResource } from "@/models/resources.model";
 import { ResponseError } from "@/models/responseError.model";
@@ -30,7 +31,6 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  Loader2,
 } from "lucide-react";
 
 type CalendarView = "timeGridWeek" | "timeGridDay";
@@ -447,8 +447,50 @@ function ReservationsCalendar() {
           className="relative mt-4 rounded-md border border-border bg-card"
         >
           {isLoadingReservations && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-card/80 backdrop-blur-sm">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div className="absolute inset-0 z-10 rounded-md bg-card/90 backdrop-blur-sm">
+              <div className="flex h-full flex-col">
+                <div className="grid grid-cols-[64px_repeat(7,minmax(0,1fr))] border-b border-border bg-card/60">
+                  <Skeleton className="h-12 rounded-none bg-muted/80" />
+                  {Array.from({ length: 7 }).map((_, index) => (
+                    <Skeleton
+                      key={`calendar-header-skeleton-${index}`}
+                      className="h-12 rounded-none bg-muted/80"
+                    />
+                  ))}
+                </div>
+                <div className="flex flex-1 overflow-hidden">
+                  <div className="flex w-16 flex-col border-r border-border bg-card/50">
+                    {Array.from({ length: 8 }).map((_, index) => (
+                      <Skeleton
+                        key={`calendar-time-skeleton-${index}`}
+                        className="h-full min-h-[72px] rounded-none border-b border-border bg-muted/50"
+                      />
+                    ))}
+                  </div>
+                  <div className="grid flex-1 grid-cols-7 bg-card/40">
+                    {Array.from({ length: 7 }).map((_, columnIndex) => (
+                      <div
+                        key={`calendar-day-skeleton-${columnIndex}`}
+                        className="flex flex-1 flex-col border-r border-border last:border-r-0"
+                      >
+                        {Array.from({ length: 8 }).map((_, rowIndex) => (
+                          <div
+                            key={`calendar-slot-skeleton-${columnIndex}-${rowIndex}`}
+                            className="relative flex-1 border-b border-border last:border-b-0"
+                          >
+                            {rowIndex % 2 === 0 && (
+                              <Skeleton className="absolute left-2 top-2 h-8 w-[60%] rounded-md bg-muted/70" />
+                            )}
+                            {rowIndex % 4 === 1 && (
+                              <Skeleton className="absolute right-2 bottom-2 h-8 w-[45%] rounded-md bg-muted/60" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           <FullCalendar

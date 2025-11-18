@@ -31,6 +31,7 @@ type SelectedResourcesSectionProps = {
   isRemovingSelectedResource: boolean;
   isReorderingSelectedResources: boolean;
   resourceBeingRemovedId: string | null;
+  hasUnsavedOrderChanges: boolean;
   canSaveOrder: boolean;
   onRemove: (selectedResource: SelectedResource) => Promise<void> | void;
   onReorder: (activeId: string, overId: string) => void;
@@ -45,6 +46,7 @@ export function SelectedResourcesSection({
   isRemovingSelectedResource,
   isReorderingSelectedResources,
   resourceBeingRemovedId,
+  hasUnsavedOrderChanges,
   canSaveOrder,
   onRemove,
   onReorder,
@@ -125,7 +127,7 @@ export function SelectedResourcesSection({
         </DndContext>
       )}
 
-      {selectedResources.length > 0 && (
+      {hasUnsavedOrderChanges && (
         <div className="mt-4 flex justify-end">
           <Button
             type="button"

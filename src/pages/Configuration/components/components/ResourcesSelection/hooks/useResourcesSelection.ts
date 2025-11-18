@@ -26,6 +26,7 @@ export function useResourcesSelection() {
   const [selectedResources, setSelectedResources] = useState<
     SelectedResource[]
   >([]);
+  const [lastSavedOrderIds, setLastSavedOrderIds] = useState<string[]>([]);
   const [selectedResourcesStatus, setSelectedResourcesStatus] =
     useState<SelectedResourcesStatus>("idle");
   const [resourceBeingRemovedId, setResourceBeingRemovedId] = useState<
@@ -44,8 +45,21 @@ export function useResourcesSelection() {
     isReorderingSelectedResources;
   const isListInteractionLocked = isSelectionActionInFlight;
   const showSelectionOverlay = isReorderingSelectedResources;
-  const canSaveOrder =
-    selectedResources.length > 1 && !isSelectionActionInFlight;
+  const hasUnsavedOrderChanges = useMemo(() => {
+    if (selectedResources.length <= 1) {
+      return false;
+    }
+
+    if (selectedResources.length !== lastSavedOrderIds.length) {
+      return true;
+    }
+
+    return selectedResources.some(
+      (item, index) => item.id !== lastSavedOrderIds[index]
+    );
+  }, [lastSavedOrderIds, selectedResources]);
+
+  const canSaveOrder = hasUnsavedOrderChanges && !isSelectionActionInFlight;
 
   useEffect(() => {
     if (!token) {
@@ -84,7 +98,11 @@ export function useResourcesSelection() {
         );
 
         const response = await getSelectedResources(token);
-        setSelectedResources(response);
+        const sortedResources = [...response].sort(
+          (a, b) => a.priority - b.priority
+        );
+        setSelectedResources(sortedResources);
+        setLastSavedOrderIds(sortedResources.map((item) => item.id));
       } catch (error) {
         if (error instanceof ResponseError) {
           toast.error(error.message);
@@ -170,6 +188,25 @@ export function useResourcesSelection() {
             }));
         });
 
+        setLastSavedOrderIds((prevSavedIds) => {
+          const sanitizedSavedIds = prevSavedIds.filter(
+            (id) => id !== savedSelectedResource.id
+          );
+
+          const insertionIndex = Math.max(
+            0,
+            Math.min(
+              (savedSelectedResource.priority ?? sanitizedSavedIds.length + 1) -
+                1,
+              sanitizedSavedIds.length
+            )
+          );
+
+          sanitizedSavedIds.splice(insertionIndex, 0, savedSelectedResource.id);
+
+          return sanitizedSavedIds;
+        });
+
         return true;
       } catch (error) {
         if (error instanceof ResponseError) {
@@ -198,13 +235,17 @@ export function useResourcesSelection() {
         setResourceBeingRemovedId(selectedResource.id);
         await unselectAvailableResource(selectedResource.id, token);
 
-        setSelectedResources((prevSelected) =>
-          prevSelected
+        setSelectedResources((prevSelected) => {
+          return prevSelected
             .filter((item) => item.id !== selectedResource.id)
             .map((item, index) => ({
               ...item,
               priority: index + 1,
-            }))
+            }));
+        });
+
+        setLastSavedOrderIds((prevSavedIds) =>
+          prevSavedIds.filter((id) => id !== selectedResource.id)
         );
       } catch (error) {
         if (error instanceof ResponseError) {
@@ -262,6 +303,7 @@ export function useResourcesSelection() {
       );
 
       await reorderSelectedResources(orderedIds, token);
+      setLastSavedOrderIds(orderedIds);
       toast.success("Orden de recursos actualizado correctamente");
     } catch (error) {
       if (error instanceof ResponseError) {
@@ -289,6 +331,7 @@ export function useResourcesSelection() {
     isSelectionActionInFlight,
     isListInteractionLocked,
     showSelectionOverlay,
+    hasUnsavedOrderChanges,
     canSaveOrder,
     addSelectedResource,
     removeSelectedResource,

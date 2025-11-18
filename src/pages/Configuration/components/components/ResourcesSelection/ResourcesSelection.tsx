@@ -24,6 +24,7 @@ function ResourcesSelection() {
     isSelectionActionInFlight,
     isListInteractionLocked,
     showSelectionOverlay,
+    hasUnsavedOrderChanges,
     canSaveOrder,
     addSelectedResource,
     removeSelectedResource,
@@ -98,6 +99,7 @@ function ResourcesSelection() {
               isRemovingSelectedResource={isRemovingSelectedResource}
               isReorderingSelectedResources={isReorderingSelectedResources}
               resourceBeingRemovedId={resourceBeingRemovedId}
+              hasUnsavedOrderChanges={hasUnsavedOrderChanges}
               canSaveOrder={canSaveOrder}
               onRemove={removeSelectedResource}
               onReorder={reorderSelectedResourcesLocally}

@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/sonner";
 import {
   DEFAULT_REDIRECT,
   PRIVATE_ROUTES,
@@ -107,7 +106,6 @@ function App() {
           <Route path="*" element={<Navigate to={DEFAULT_REDIRECT} />} />
         </Routes>
       </Router>
-      <Toaster />
     </>
   );
 }

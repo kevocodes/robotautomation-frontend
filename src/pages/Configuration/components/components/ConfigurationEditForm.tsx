@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -58,7 +59,7 @@ function ConfigurationEditForm() {
       toast.success("Configuración actualizada correctamente");
     } catch (error) {
       if (error instanceof ResponseError) return toast.error(error.message);
-      toast.error("Ha ocurrido un error inesperado");
+      return toast.error("Ha ocurrido un error inesperado");
     }
   };
 
@@ -77,7 +78,11 @@ function ConfigurationEditForm() {
           name="cleaningStartOffsetMinutes"
           render={({ field }) => (
             <FormItem className="flex-1">
-              <FormLabel>Offset de inicio de limpieza (minutos)</FormLabel>
+              <FormLabel>Anticipación antes del evento (minutos)</FormLabel>
+              <FormDescription>
+                Cuántos minutos antes del inicio de la reservación debe comenzar
+                la limpieza.
+              </FormDescription>
               <FormControl>
                 <Input
                   type="number"
@@ -98,6 +103,9 @@ function ConfigurationEditForm() {
           render={({ field }) => (
             <FormItem className="flex-1">
               <FormLabel>Duración de limpieza (minutos)</FormLabel>
+              <FormDescription>
+                Tiempo que se estima que el robot tardará en limpiar el recurso.
+              </FormDescription>
               <FormControl>
                 <Input
                   type="number"
@@ -105,6 +113,54 @@ function ConfigurationEditForm() {
                   value={field.value.toString()}
                   onChange={(e) => field.onChange(Number(e.target.value))}
                   placeholder="Duración de limpieza en minutos"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="cleaningVerificationFrequencyMinutes"
+          render={({ field }) => (
+            <FormItem className="flex-1">
+              <FormLabel>Frecuencia de verificación (minutos)</FormLabel>
+              <FormDescription>
+                Cada cuántos minutos el sistema revisa nuevas limpiezas
+                pendientes.
+              </FormDescription>
+              <FormControl>
+                <Input
+                  type="number"
+                  {...field}
+                  value={field.value.toString()}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  placeholder="Frecuencia de verificación en minutos"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="cleaningLookAheadMinutes"
+          render={({ field }) => (
+            <FormItem className="flex-1">
+              <FormLabel>Ventana de anticipación (minutos)</FormLabel>
+              <FormDescription>
+                Cuántos minutos hacia adelante se buscan eventos de limpieza en
+                cada verificación.
+              </FormDescription>
+              <FormControl>
+                <Input
+                  type="number"
+                  {...field}
+                  value={field.value.toString()}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  placeholder="Frecuencia de verificación en minutos"
                 />
               </FormControl>
               <FormMessage />
