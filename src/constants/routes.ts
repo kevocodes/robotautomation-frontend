@@ -9,6 +9,8 @@ export enum PRIVATE_ROUTES {
 
   RESERVATIONS = "/reservaciones",
 
+  ROBOT_DASHBOARD = "/robot-dashboard",
+
   USERS = "/usuarios",
   USERS_CREATE = "/usuarios/crear",
   USERS_EDIT = "/usuarios/editar",

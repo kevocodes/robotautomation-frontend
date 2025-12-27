@@ -2,7 +2,7 @@ import { SidebarItem, SidebarItemLogout } from "./SidebarItem";
 import { PRIVATE_ROUTES } from "@/constants/routes";
 import { Role } from "@/models/user.model";
 import { useSidebar } from "@/stores/sidebar.store";
-import { CalendarClock, Cog, LogOut, User, UserCog } from "lucide-react";
+import { Bot, CalendarClock, Cog, LogOut, User, UserCog } from "lucide-react";
 
 interface SidebarContentProps {
   isMobile?: boolean;
@@ -21,6 +21,15 @@ export const SidebarContent = ({ isMobile }: SidebarContentProps) => {
         isIndexRoute
       >
         <CalendarClock size={24} />
+      </SidebarItem>
+
+      <SidebarItem
+        label="Gestión de Robot"
+        to={PRIVATE_ROUTES.ROBOT_DASHBOARD}
+        isSidebarOpen={isSidebarOpen}
+        isIndexRoute
+      >
+        <Bot size={24} />
       </SidebarItem>
 
       <SidebarItem
