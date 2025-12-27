@@ -27,7 +27,6 @@ export const SidebarContent = ({ isMobile }: SidebarContentProps) => {
         label="Gestión de Robot"
         to={PRIVATE_ROUTES.ROBOT_DASHBOARD}
         isSidebarOpen={isSidebarOpen}
-        isIndexRoute
       >
         <Bot size={24} />
       </SidebarItem>
