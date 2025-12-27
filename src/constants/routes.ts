@@ -15,6 +15,8 @@ export enum PRIVATE_ROUTES {
 
   VERIFY_EMAIL = "/verificar-correo",
   PROFILE = "/perfil",
+
+  SETTINGS = "/configuracion",
 }
 
 export const DEFAULT_REDIRECT = PRIVATE_ROUTES.HOME;
