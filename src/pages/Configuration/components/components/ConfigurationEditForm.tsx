@@ -81,7 +81,7 @@ function ConfigurationEditForm() {
               <FormLabel>Anticipación antes del evento (minutos)</FormLabel>
               <FormDescription>
                 Cuántos minutos antes del inicio de la reservación debe comenzar
-                la limpieza.
+                la desinfección.
               </FormDescription>
               <FormControl>
                 <Input
@@ -89,7 +89,7 @@ function ConfigurationEditForm() {
                   {...field}
                   value={field.value.toString()}
                   onChange={(e) => field.onChange(Number(e.target.value))}
-                  placeholder="Offset de inicio de limpieza en minutos"
+                  placeholder="Offset de inicio de desinfección en minutos"
                 />
               </FormControl>
               <FormMessage />
@@ -102,7 +102,7 @@ function ConfigurationEditForm() {
           name="cleaningDurationMinutes"
           render={({ field }) => (
             <FormItem className="flex-1">
-              <FormLabel>Duración de limpieza (minutos)</FormLabel>
+              <FormLabel>Duración de desinfección (minutos)</FormLabel>
               <FormDescription>
                 Tiempo que se estima que el robot tardará en limpiar el recurso.
               </FormDescription>
@@ -112,7 +112,7 @@ function ConfigurationEditForm() {
                   {...field}
                   value={field.value.toString()}
                   onChange={(e) => field.onChange(Number(e.target.value))}
-                  placeholder="Duración de limpieza en minutos"
+                  placeholder="Duración de desinfección en minutos"
                 />
               </FormControl>
               <FormMessage />
@@ -127,7 +127,7 @@ function ConfigurationEditForm() {
             <FormItem className="flex-1">
               <FormLabel>Frecuencia de verificación (minutos)</FormLabel>
               <FormDescription>
-                Cada cuántos minutos el sistema revisa nuevas limpiezas
+                Cada cuántos minutos el sistema revisa nuevas desinfeccións
                 pendientes.
               </FormDescription>
               <FormControl>
@@ -151,7 +151,7 @@ function ConfigurationEditForm() {
             <FormItem className="flex-1">
               <FormLabel>Ventana de anticipación (minutos)</FormLabel>
               <FormDescription>
-                Cuántos minutos hacia adelante se buscan eventos de limpieza en
+                Cuántos minutos hacia adelante se buscan eventos de desinfección en
                 cada verificación.
               </FormDescription>
               <FormControl>

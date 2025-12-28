@@ -27,7 +27,8 @@ import RequireUnverifiedUser from "@/guards/unverifiedUser.guard";
 import ForgotPasword from "@/pages/ForgotPassword/ForgotPasword";
 import ResetPassword from "@/pages/ResetPassword/ResetPassword";
 import Reservations from "@/pages/Reservations/Reservations";
-import Configuration from "./pages/Configuration/Configuration";
+import Configuration from "@/pages/Configuration/Configuration";
+import RobotDashboard from "@/pages/RobotDashboard/RobotDashboard";
 
 function App() {
   const token = useAuth((state) => state.token);
@@ -68,15 +69,17 @@ function App() {
           {/* PRIVATE ROUTES */}
           <Route element={<AppLayout />}>
             <Route
-              element={
-                <RequireAuth
-                  allowedRoles={[Role.ADMIN, Role.USER]}
-                />
-              }
+              element={<RequireAuth allowedRoles={[Role.ADMIN, Role.USER]} />}
             >
               <Route index element={<Reservations />} />
-              <Route path={PRIVATE_ROUTES.RESERVATIONS} element={<Reservations />} />
-
+              <Route
+                path={PRIVATE_ROUTES.RESERVATIONS}
+                element={<Reservations />}
+              />
+              <Route
+                path={PRIVATE_ROUTES.ROBOT_DASHBOARD}
+                element={<RobotDashboard />}
+              />
               <Route path={PRIVATE_ROUTES.PROFILE} element={<Profile />} />
             </Route>
 
@@ -90,7 +93,10 @@ function App() {
                 path={`${PRIVATE_ROUTES.USERS_EDIT}/:userId`}
                 element={<UserEdit />}
               />
-              <Route path={PRIVATE_ROUTES.SETTINGS} element={<Configuration />} />
+              <Route
+                path={PRIVATE_ROUTES.SETTINGS}
+                element={<Configuration />}
+              />
             </Route>
           </Route>
 

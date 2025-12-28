@@ -80,4 +80,6 @@ export const theme = {
   },
 };
 
-export const plugins = [tailwindcssAnimate];
+import containerQueries from "@tailwindcss/container-queries";
+
+export const plugins = [tailwindcssAnimate, containerQueries];

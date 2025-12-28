@@ -55,7 +55,7 @@ const CalendarEventDetailsDialog: FC<CalendarEventDetailsDialogProps> = ({
   }, [event]);
 
   const typeLabel =
-    event?.type === "cleaning" ? "Limpieza programada" : "Reservación";
+    event?.type === "cleaning" ? "Desinfección programada" : "Reservación";
 
   const renderContent = () => {
     if (!event) return null;
@@ -102,7 +102,7 @@ const CalendarEventDetailsDialog: FC<CalendarEventDetailsDialogProps> = ({
         <div>
           <span className="font-semibold">Descripción</span>
           <p className="whitespace-pre-wrap">
-            {`El robot realizará la limpieza del recurso ${event.cleaningEvent.resourceName} durante este periodo.`}
+            {`El robot realizará la desinfección del recurso ${event.cleaningEvent.resourceName} durante este periodo.`}
           </p>
         </div>
       </div>

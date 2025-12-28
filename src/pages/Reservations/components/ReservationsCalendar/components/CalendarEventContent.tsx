@@ -14,7 +14,7 @@ const CalendarEventContent: FC<CalendarEventContentProps> = ({
     (event.extendedProps as CalendarEventExtendedProps | undefined) ?? undefined;
   const isCleaningEvent = extendedProps?.type === "cleaning";
   const resourceName = extendedProps?.resourceName ?? "";
-  const eventTitle = isCleaningEvent ? "Limpieza" : event.title;
+  const eventTitle = isCleaningEvent ? "Desinfección" : event.title;
 
   if (isCleaningEvent) {
     return (

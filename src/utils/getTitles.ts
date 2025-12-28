@@ -13,7 +13,9 @@ export const getTitles = (route: Route) => {
     [PRIVATE_ROUTES.USERS_CREATE]: "Crear Usuario",
     [PRIVATE_ROUTES.USERS_EDIT]: "Editar Usuario",
     [PRIVATE_ROUTES.PROFILE]: "Perfil",
+    [PRIVATE_ROUTES.ROBOT_DASHBOARD]: "Panel de Control Robot",
     [PRIVATE_ROUTES.VERIFY_EMAIL]: "Verificar Correo Electrónico",
+    [PRIVATE_ROUTES.SETTINGS]: "Configuración",
   };
 
   return titles[route];

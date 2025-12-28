@@ -12,7 +12,7 @@ export const mapCleaningEventsToEvents = (
 ): EventInput[] => {
   return cleaningEvents.map((cleaningEvent, index) => ({
     id: buildCleaningEventId(cleaningEvent, index),
-    title: "Limpieza",
+    title: "Desinfección",
     start: cleaningEvent.startDate,
     end: cleaningEvent.endDate,
     backgroundColor: cleaningEvent.color || undefined,
@@ -21,7 +21,7 @@ export const mapCleaningEventsToEvents = (
       type: "cleaning",
       cleaningEvent,
       resourceName: cleaningEvent.resourceName,
-      description: `Limpieza programada del recurso ${cleaningEvent.resourceName}`,
+      description: `Desinfección programada del recurso ${cleaningEvent.resourceName}`,
     } satisfies CleaningEventExtendedProps,
   }));
 };
