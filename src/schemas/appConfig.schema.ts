@@ -35,7 +35,7 @@ export const AppConfigSchema = z
         code: z.ZodIssueCode.custom,
         path: ["cleaningLookAheadMinutes"],
         message:
-          "Debe ser mayor o igual a la frecuencia de verificación de limpieza",
+          "Debe ser mayor o igual a la frecuencia de verificación de desinfección",
       });
     }
   });
