@@ -74,8 +74,9 @@ function RobotDashboard() {
   useEffect(() => {
     if (!token) return;
 
-    const url = `${import.meta.env.VITE_API_URL
-      }/mqtt/stream?topic=${encodeURIComponent("/robot/dashboard")}`;
+    const url = `${
+      import.meta.env.VITE_API_URL
+    }/mqtt/stream?topic=${encodeURIComponent("/robot/dashboard")}`;
     const eventSource = new EventSource(url);
 
     console.log("Connecting to SSE:", url);
@@ -84,7 +85,11 @@ function RobotDashboard() {
     const resetWatchdog = () => {
       if (watchdogRef.current) clearTimeout(watchdogRef.current);
       watchdogRef.current = setTimeout(() => {
-        setTelemetry((prev) => ({ ...prev, state: "DESCONECTADO", ...RESET_METRICS }));
+        setTelemetry((prev) => ({
+          ...prev,
+          state: "DESCONECTADO",
+          ...RESET_METRICS,
+        }));
         setElapsedTime(0);
       }, 5000);
     };
@@ -99,7 +104,7 @@ function RobotDashboard() {
 
         // Sync local timer with received elapsed time using threshold to prevent flickering
         if (data.clean_elapsed !== undefined) {
-          setElapsedTime(prev => {
+          setElapsedTime((prev) => {
             // Only sync if drift is > 2 seconds to avoid jitter between local interval and server updates
             if (Math.abs(data.clean_elapsed - prev) > 3000) {
               return data.clean_elapsed;
@@ -109,7 +114,11 @@ function RobotDashboard() {
         }
 
         // Check if state has changed to RETORNANDO_A_BASE to show toast only once
-        if (data.state && data.state === "RETORNANDO_A_BASE" && lastStateRef.current !== "RETORNANDO_A_BASE") {
+        if (
+          data.state &&
+          data.state === "RETORNANDO_A_BASE" &&
+          lastStateRef.current !== "RETORNANDO_A_BASE"
+        ) {
           toast.success("Desinfección de Sala Completada");
         }
 
@@ -118,7 +127,10 @@ function RobotDashboard() {
           let newTelemetry = { ...prev, ...data };
 
           // If returning to IDLE/DISCONNECTED, reset active metrics (yaw, steps, progress)
-          if (data.state === "ESPERANDO_MISION" || data.state === "DESCONECTADO") {
+          if (
+            data.state === "ESPERANDO_MISION" ||
+            data.state === "DESCONECTADO"
+          ) {
             newTelemetry = { ...newTelemetry, ...RESET_METRICS };
             setElapsedTime(0);
           }
@@ -129,7 +141,6 @@ function RobotDashboard() {
         if (data.state) {
           lastStateRef.current = data.state;
         }
-
       } catch (e) {
         console.error("Error parsing SSE data", e);
       }
@@ -141,7 +152,11 @@ function RobotDashboard() {
     eventSource.onerror = (err) => {
       console.error("SSE Error:", err);
       // Optional: Logic to reconnect or show status
-      setTelemetry(prev => ({ ...prev, state: "DESCONECTADO", ...RESET_METRICS }));
+      setTelemetry((prev) => ({
+        ...prev,
+        state: "DESCONECTADO",
+        ...RESET_METRICS,
+      }));
       setElapsedTime(0);
     };
 
@@ -158,7 +173,7 @@ function RobotDashboard() {
   // Local timer for smooth updates
   useEffect(() => {
     const interval = setInterval(() => {
-      if (telemetry.state.includes("LIMPIEZA")) {
+      if (telemetry.state.includes("DESINFECCIÓN")) {
         setElapsedTime((prev) => prev + 1000);
       }
     }, 1000);
@@ -185,10 +200,14 @@ function RobotDashboard() {
 
   // State color mapping
   const getStateColor = (state: string) => {
-    if (state.includes("LIMPIEZA")) return "bg-green-100 text-green-700 border-green-200";
-    if (state === "RETORNANDO_A_BASE") return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    if (state === "ESPERANDO_MISION") return "bg-slate-100 text-slate-700 border-slate-200";
-    if (state === "DESCONECTADO") return "bg-rose-100 text-rose-700 border-rose-200";
+    if (state.includes("DESINFECCIÓN"))
+      return "bg-green-100 text-green-700 border-green-200";
+    if (state === "RETORNANDO_A_BASE" || state === "MODO_SEGURIDAD")
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    if (state === "ESPERANDO_MISION")
+      return "bg-slate-100 text-slate-700 border-slate-200";
+    if (state === "DESCONECTADO")
+      return "bg-rose-100 text-rose-700 border-rose-200";
     return "bg-blue-100 text-blue-700 border-blue-200"; // Navigation states
   };
 
@@ -205,9 +224,7 @@ function RobotDashboard() {
     <PageContainer>
       <div className="flex flex-col gap-6 w-full @container">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold">
-            Gestión de Robot Autónomo
-          </h2>
+          <h2 className="text-xl font-bold">Gestión de Robot Autónomo</h2>
         </div>
 
         {/* IMU Alert */}
@@ -288,21 +305,61 @@ function RobotDashboard() {
                   </div>
 
                   {/* Step Indicator Bar */}
-                  <div className={`w-full bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 flex items-center justify-between gap-6 transition-all duration-300 ${["DESCONECTADO", "ESPERANDO_MISION"].includes(telemetry.state) ? "opacity-50 grayscale" : "opacity-100"}`}>
+                  <div
+                    className={`w-full bg-slate-50/80 p-4 rounded-xl border border-slate-100/80 flex items-center justify-between gap-6 transition-all duration-300 ${
+                      ["DESCONECTADO", "ESPERANDO_MISION"].includes(
+                        telemetry.state
+                      )
+                        ? "opacity-50 grayscale"
+                        : "opacity-100"
+                    }`}
+                  >
                     <div className="flex items-center gap-4">
                       <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                        <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                          <path className="text-slate-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
-                          <path className="text-slate-800 transition-all duration-700 ease-out" strokeDasharray={`${(telemetry.step / Math.max(telemetry.total_steps, 1)) * 100}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
+                        <svg
+                          className="w-full h-full -rotate-90"
+                          viewBox="0 0 36 36"
+                        >
+                          <path
+                            className="text-slate-200"
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="text-slate-800 transition-all duration-700 ease-out"
+                            strokeDasharray={`${
+                              (telemetry.step /
+                                Math.max(telemetry.total_steps, 1)) *
+                              100
+                            }, 100`}
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
                         </svg>
-                        <span className="absolute text-[10px] font-bold text-slate-600">{Math.round((telemetry.step / Math.max(telemetry.total_steps, 1)) * 100)}%</span>
+                        <span className="absolute text-[10px] font-bold text-slate-600">
+                          {Math.round(
+                            (telemetry.step /
+                              Math.max(telemetry.total_steps, 1)) *
+                              100
+                          )}
+                          %
+                        </span>
                       </div>
 
                       <div className="flex flex-col">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Progreso de Rutina</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                          Progreso de Rutina
+                        </span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-xl font-bold text-slate-800">
-                            Paso {telemetry.step} <span className="text-slate-400 font-medium text-sm">/ {telemetry.total_steps}</span>
+                            Paso {telemetry.step}{" "}
+                            <span className="text-slate-400 font-medium text-sm">
+                              / {telemetry.total_steps}
+                            </span>
                           </span>
                         </div>
                       </div>
@@ -311,12 +368,28 @@ function RobotDashboard() {
                 </div>
 
                 {/* Compass Widget */}
-                <div className={`relative w-40 h-40 border-8 border-slate-50 rounded-full flex items-center justify-center bg-white shadow-inner shrink-0 transition-all duration-300 ${["DESCONECTADO", "ESPERANDO_MISION"].includes(telemetry.state) ? "opacity-50 grayscale" : "opacity-100"}`}>
+                <div
+                  className={`relative w-40 h-40 border-8 border-slate-50 rounded-full flex items-center justify-center bg-white shadow-inner shrink-0 transition-all duration-300 ${
+                    ["DESCONECTADO", "ESPERANDO_MISION"].includes(
+                      telemetry.state
+                    )
+                      ? "opacity-50 grayscale"
+                      : "opacity-100"
+                  }`}
+                >
                   {/* Labels - moved to back */}
-                  <span className="absolute top-2 text-[10px] font-extrabold text-slate-300 select-none">N</span>
-                  <span className="absolute bottom-2 text-[10px] font-extrabold text-slate-300 select-none">S</span>
-                  <span className="absolute left-2 text-[10px] font-extrabold text-slate-300 select-none">W</span>
-                  <span className="absolute right-2 text-[10px] font-extrabold text-slate-300 select-none">E</span>
+                  <span className="absolute top-2 text-[10px] font-extrabold text-slate-300 select-none">
+                    N
+                  </span>
+                  <span className="absolute bottom-2 text-[10px] font-extrabold text-slate-300 select-none">
+                    S
+                  </span>
+                  <span className="absolute left-2 text-[10px] font-extrabold text-slate-300 select-none">
+                    W
+                  </span>
+                  <span className="absolute right-2 text-[10px] font-extrabold text-slate-300 select-none">
+                    E
+                  </span>
 
                   <div
                     className="absolute w-full h-full transition-transform duration-500 ease-out z-20"
@@ -341,16 +414,25 @@ function RobotDashboard() {
         {/* Mission Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 @lg:grid-cols-2 gap-6">
           <Card
-            className={`transition-opacity duration-300 ${telemetry.state.includes("LIMPIEZA")
-              ? "opacity-100"
-              : "opacity-40 grayscale pointer-events-none"
-              }`}
+            className={`transition-opacity duration-300 ${
+              telemetry.state.includes("DESINFECCIÓN")
+                ? "opacity-100"
+                : "opacity-40 grayscale pointer-events-none"
+            }`}
           >
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-800">Desinfección</CardTitle>
-                <span className={`text-sm px-2 py-0.5 rounded font-medium ${telemetry.clean_progress >= 100 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                  {telemetry.clean_progress >= 100 ? 'Completado' : 'En Progreso'}
+                <span
+                  className={`text-sm px-2 py-0.5 rounded font-medium ${
+                    telemetry.clean_progress >= 100
+                      ? "bg-green-100 text-green-700"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {telemetry.clean_progress >= 100
+                    ? "Completado"
+                    : "En Progreso"}
                 </span>
               </div>
             </CardHeader>
@@ -359,20 +441,28 @@ function RobotDashboard() {
                 <div className="flex items-end justify-between">
                   <span className="text-4xl font-black text-slate-900 tracking-tighter">
                     {telemetry.clean_progress.toFixed(1)}
-                    <span className="text-lg text-slate-400 font-medium ml-1">%</span>
+                    <span className="text-lg text-slate-400 font-medium ml-1">
+                      %
+                    </span>
                   </span>
-                  <span className="text-sm font-medium text-muted-foreground mb-1">Progreso Total</span>
+                  <span className="text-sm font-medium text-muted-foreground mb-1">
+                    Progreso Total
+                  </span>
                 </div>
-                <Progress value={telemetry.clean_progress} className="h-6 rounded-lg bg-slate-100" />
+                <Progress
+                  value={telemetry.clean_progress}
+                  className="h-6 rounded-lg bg-slate-100"
+                />
               </div>
             </CardContent>
           </Card>
 
           <Card
-            className={`transition-opacity duration-300 ${telemetry.state.includes("LIMPIEZA")
-              ? "opacity-100"
-              : "opacity-40 grayscale pointer-events-none"
-              }`}
+            className={`transition-opacity duration-300 ${
+              telemetry.state.includes("DESINFECCIÓN")
+                ? "opacity-100"
+                : "opacity-40 grayscale pointer-events-none"
+            }`}
           >
             <CardHeader>
               <CardTitle>Tiempo de desinfección</CardTitle>
