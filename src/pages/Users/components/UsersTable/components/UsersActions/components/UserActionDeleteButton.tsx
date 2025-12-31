@@ -1,15 +1,17 @@
-import { DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
-function UserActionDeleteButton() {
+interface UserActionDeleteButtonProps {
+  onOpen: () => void;
+}
+
+function UserActionDeleteButton({ onOpen }: UserActionDeleteButtonProps) {
   return (
-    <>
-      <DialogTrigger asChild>
-        <DropdownMenuItem className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer">
-          Eliminar
-        </DropdownMenuItem>
-      </DialogTrigger>
-    </>
+    <DropdownMenuItem
+      onSelect={onOpen}
+      className="focus:bg-destructive focus:text-destructive-foreground cursor-pointer"
+    >
+      Eliminar
+    </DropdownMenuItem>
   );
 }
 

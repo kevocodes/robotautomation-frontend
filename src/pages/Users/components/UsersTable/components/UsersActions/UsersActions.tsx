@@ -19,10 +19,11 @@ interface UserActionsProps {
 
 function UsersActions({ user }: UserActionsProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-      <DropdownMenu>
+      <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="h-8 w-8 p-0">
             <span className="sr-only">Open actions menu</span>
@@ -32,7 +33,12 @@ function UsersActions({ user }: UserActionsProps) {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
           <UserActionEditButton user={user} />
-          <UserActionDeleteButton />
+          <UserActionDeleteButton
+            onOpen={() => {
+              setIsMenuOpen(false);
+              setIsDeleteDialogOpen(true);
+            }}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
       <UserActionDeleteDialog
