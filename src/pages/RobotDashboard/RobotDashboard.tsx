@@ -52,7 +52,7 @@ const RESET_METRICS = {
 };
 
 function RobotDashboard() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [resources, setResources] = useState<SelectedResource[]>([]);
   const [selectedResourceId, setSelectedResourceId] = useState<string>("");
   const [telemetry, setTelemetry] = useState<TelemetryData>(DEFAULT_TELEMETRY);
@@ -60,6 +60,8 @@ function RobotDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const watchdogRef = useRef<NodeJS.Timeout | null>(null);
   const lastStateRef = useRef<string>(DEFAULT_TELEMETRY.state);
+
+  const isAdmin = user?.role === "ADMIN";
 
   // Fetch resources on mount
   useEffect(() => {
@@ -240,7 +242,7 @@ function RobotDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 @lg:grid-cols-3 gap-6">
           {/* Control Panel */}
-          <Card className="md:col-span-1 @lg:col-span-1">
+          <Card className={`md:col-span-1 @lg:col-span-1 ${!isAdmin ? "opacity-50 grayscale pointer-events-none" : ""}`}>
             <CardHeader>
               <CardTitle>Panel de Control</CardTitle>
             </CardHeader>
@@ -252,6 +254,7 @@ function RobotDashboard() {
                 <Select
                   onValueChange={setSelectedResourceId}
                   value={selectedResourceId}
+                  disabled={resources.length === 0 || !isAdmin}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione un robot..." />
