@@ -127,7 +127,7 @@ function ConfigurationEditForm() {
             <FormItem className="flex-1">
               <FormLabel>Frecuencia de verificación (minutos)</FormLabel>
               <FormDescription>
-                Cada cuántos minutos el sistema revisa nuevas desinfeccións
+                Cada cuántos minutos el sistema revisa nuevas desinfecciones
                 pendientes.
               </FormDescription>
               <FormControl>
